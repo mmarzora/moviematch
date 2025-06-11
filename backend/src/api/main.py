@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 from ..database.db import get_db
 
+
 # Load environment variables
 load_dotenv(dotenv_path='.env')
 
@@ -25,10 +26,19 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="MovieMatch API")
 
+import os, psutil
+from fastapi import FastAPI
+
+
+@app.on_event("startup")
+def log_memory_usage():
+    mem = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
+    print("Memory usage at startup (MB):", mem)
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8080", "file://"],  # Allow both React dev and local HTML server
+    allow_origins=json.loads(os.getenv("CORS_ORIGINS", "[]")),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -116,6 +126,7 @@ async def explain_recommendation(
 
 if __name__ == "__main__":
     import uvicorn
+    import os, psutil
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(
         "src.api.main:app",
@@ -123,3 +134,5 @@ if __name__ == "__main__":
         port=port,
         reload=settings.DEBUG
     ) 
+    print("Memory usage (MB):", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
+

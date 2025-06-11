@@ -34,12 +34,19 @@ def parse_json_field(val):
 
 class EmbeddingAnalyzer:
     """Tool for analyzing and interpreting movie embeddings."""
-    
+    _model = None  # Class-level cache for the model
+
     def __init__(self):
-        """Initialize the analyzer."""
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
         self.embedding_dim = 384  # all-MiniLM-L6-v2 dimension
-        
+        # Do not load the model here
+
+    @classmethod
+    def get_model(cls):
+        if cls._model is None:
+            from sentence_transformers import SentenceTransformer
+            cls._model = SentenceTransformer('all-MiniLM-L6-v2')
+        return cls._model
+    
     def get_all_embeddings(self, db: Session, limit: Optional[int] = None) -> Tuple[np.ndarray, List[dict]]:
         """Get all movie embeddings and metadata."""
         query = db.query(Movie).filter(Movie.embedding.isnot(None))

@@ -17,15 +17,24 @@ def parse_json_field(val):
 
 class MovieService:
     """Service for movie-related operations."""
-    
+    _model = None  # Class-level cache for the model
+
     def __init__(self):
-        """Initialize the movie service."""
-        self.model = SentenceTransformer(settings.EMBEDDING_MODEL)
-    
+        pass  # Do not load the model here
+
+    @classmethod
+    def get_model(cls):
+        if cls._model is None:
+            from sentence_transformers import SentenceTransformer
+            from ..config import settings
+            cls._model = SentenceTransformer(settings.EMBEDDING_MODEL)
+        return cls._model
+
     def get_movie_embedding(self, title: str, description: str, genres: List[str]) -> bytes:
         """Generate embedding for a movie based on its metadata."""
         text = f"{title} {description} {' '.join(genres)}"
-        embedding = self.model.encode([text])[0]
+        model = self.get_model()
+        embedding = model.encode([text])[0]
         return embedding.tobytes()
     
     def bytes_to_array(self, embedding_bytes: bytes) -> np.ndarray:

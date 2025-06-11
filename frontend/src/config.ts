@@ -7,9 +7,11 @@ const hostname = window.location.hostname;
 
 // If accessing via IP address, use the same IP for backend
 // Otherwise use localhost (for development)
-export const API_BASE_URL = hostname === 'localhost' || hostname === '127.0.0.1' 
-  ? process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000'
-  : `http://${hostname}:8000`;
+export const API_BASE_URL =
+  process.env.REACT_APP_BACKEND_URL ||
+  (hostname === 'localhost' || hostname === '127.0.0.1'
+    ? 'http://localhost:8000'
+    : `https://${hostname}/api`);
 
 export const config = {
   API_BASE_URL,

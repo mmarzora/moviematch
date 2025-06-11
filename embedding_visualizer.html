@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieMatch Embedding Visualizer</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        
+        .header p {
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .control-group label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+        
+        .control-group select, .control-group input {
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .control-group select:focus, .control-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            align-self: end;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .analysis-section {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .plot-container {
+            min-height: 600px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            background: #f8f9fa;
+        }
+        
+        .info-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .info-panel h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        
+        .stats {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+            margin: 20px 0;
+        }
+        
+        .genre-legend {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .genre-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+        }
+        
+        .genre-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .genre-name {
+            font-size: 0.85rem;
+        }
+        
+        @media (max-width: 768px) {
+            .analysis-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .control-group {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 MovieMatch Embedding Visualizer</h1>
+            <p>Explore the semantic space of movie recommendations using dimensionality reduction</p>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="method">Reduction Method</label>
+                <select id="method">
+                    <option value="pca">PCA (Principal Component Analysis)</option>
+                    <option value="tsne">t-SNE (t-Distributed Stochastic Neighbor Embedding)</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="limit">Number of Movies</label>
+                <select id="limit">
+                    <option value="100">100 movies</option>
+                    <option value="200" selected>200 movies</option>
+                    <option value="500">500 movies</option>
+                    <option value="1000">1000 movies</option>
+                </select>
+            </div>
+            
+            <button class="btn" onclick="loadVisualization()">Generate Visualization</button>
+        </div>
+        
+        <div class="analysis-section">
+            <div class="plot-container" id="plotContainer">
+                <div class="loading">
+                    <h3>Welcome to Embedding Analysis</h3>
+                    <p>Click "Generate Visualization" to start exploring movie embeddings</p>
+                    <p><strong>What are embeddings?</strong> High-dimensional vectors that capture semantic meaning of movies based on title, description, and genres.</p>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <h3>📊 Analysis</h3>
+                <div id="analysisInfo">
+                    <p>Select visualization parameters and click generate to see:</p>
+                    <ul>
+                        <li><strong>PCA:</strong> Linear reduction preserving variance</li>
+                        <li><strong>t-SNE:</strong> Non-linear reduction preserving local structure</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div id="additionalAnalysis" style="display: none;">
+            <h2>🔍 Additional Analysis</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div class="info-panel">
+                    <h3>🎭 Clusters</h3>
+                    <button class="btn" onclick="loadClusters()">Analyze Clusters</button>
+                    <div id="clusterInfo"></div>
+                </div>
+                
+                <div class="info-panel">
+                    <h3>📈 Dimensions</h3>
+                    <button class="btn" onclick="loadDimensions()">Analyze Dimensions</button>
+                    <div id="dimensionInfo"></div>
+                </div>
+                
+                <div class="info-panel">
+                    <h3>🚨 Outliers</h3>
+                    <button class="btn" onclick="loadOutliers()">Find Outliers</button>
+                    <div id="outlierInfo"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        async function loadVisualization() {
+            const method = document.getElementById('method').value;
+            const limit = document.getElementById('limit').value;
+            const plotContainer = document.getElementById('plotContainer');
+            const analysisInfo = document.getElementById('analysisInfo');
+            
+            // Show loading
+            plotContainer.innerHTML = '<div class="loading"><h3>Loading...</h3><p>Processing embeddings and reducing dimensions...</p></div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/embeddings/visualization/data?method=${method}&limit=${limit}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Create visualization
+                createScatterPlot(data);
+                
+                // Update analysis info
+                updateAnalysisInfo(data);
+                
+                // Show additional analysis options
+                document.getElementById('additionalAnalysis').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading visualization:', error);
+                plotContainer.innerHTML = `
+                    <div class="error">
+                        <h3>Error Loading Data</h3>
+                        <p>${error.message}</p>
+                        <p>Make sure the backend server is running on <code>localhost:8000</code></p>
+                    </div>
+                `;
+            }
+        }
+        
+        function createScatterPlot(data) {
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', 
+                '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA',
+                '#F1948A', '#85C1E9', '#F8C471', '#BB8FCE', '#98D8C8'
+            ];
+            
+            const traces = [];
+            const genres = data.unique_genres;
+            
+            genres.forEach((genre, index) => {
+                const genreMovies = data.genre_groups[genre] || [];
+                
+                if (genreMovies.length > 0) {
+                    traces.push({
+                        x: genreMovies.map(m => m.x),
+                        y: genreMovies.map(m => m.y),
+                        mode: 'markers',
+                        type: 'scatter',
+                        name: `${genre} (${genreMovies.length})`,
+                        text: genreMovies.map(m => `${m.title}<br>Genres: ${m.genres.join(', ')}<br>Rating: ${m.rating || 'N/A'}<br>Year: ${m.release_year || 'N/A'}`),
+                        hovertemplate: '%{text}<extra></extra>',
+                        marker: {
+                            color: colors[index % colors.length],
+                            size: 8,
+                            opacity: 0.7
+                        }
+                    });
+                }
+            });
+            
+            const layout = {
+                title: {
+                    text: `Movie Embeddings - ${data.method.toUpperCase()} Projection`,
+                    font: { size: 18, color: '#2c3e50' }
+                },
+                xaxis: { 
+                    title: `${data.method.toUpperCase()} Component 1`,
+                    gridcolor: '#e9ecef'
+                },
+                yaxis: { 
+                    title: `${data.method.toUpperCase()} Component 2`,
+                    gridcolor: '#e9ecef'
+                },
+                plot_bgcolor: 'white',
+                paper_bgcolor: 'white',
+                showlegend: true,
+                legend: {
+                    orientation: 'v',
+                    x: 1.02,
+                    y: 1,
+                    font: { size: 10 }
+                },
+                margin: { r: 150 }
+            };
+            
+            Plotly.newPlot('plotContainer', traces, layout, {responsive: true});
+        }
+        
+        function updateAnalysisInfo(data) {
+            const analysisInfo = document.getElementById('analysisInfo');
+            
+            let infoHTML = `
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Method</div>
+                        <div class="stat-value">${data.method.toUpperCase()}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Movies Plotted</div>
+                        <div class="stat-value">${data.total_movies}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Unique Genres</div>
+                        <div class="stat-value">${data.unique_genres.length}</div>
+                    </div>
+            `;
+            
+            if (data.explained_variance && data.explained_variance.length > 0) {
+                const totalVariance = data.explained_variance.reduce((a, b) => a + b, 0);
+                infoHTML += `
+                    <div class="stat-item">
+                        <div class="stat-label">Variance Explained</div>
+                        <div class="stat-value">${(totalVariance * 100).toFixed(1)}%</div>
+                    </div>
+                `;
+            }
+            
+            infoHTML += '</div>';
+            
+            analysisInfo.innerHTML = infoHTML;
+        }
+        
+        async function loadClusters() {
+            const clusterInfo = document.getElementById('clusterInfo');
+            clusterInfo.innerHTML = '<div class="loading">Loading clusters...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/embeddings/analyze/clusters?n_clusters=8`);
+                const data = await response.json();
+                
+                let html = '<h4>Movie Clusters</h4>';
+                Object.entries(data.cluster_analysis).forEach(([clusterId, analysis]) => {
+                    html += `
+                        <div class="stat-item" style="margin-bottom: 10px;">
+                            <div class="stat-label">Cluster ${clusterId} (${analysis.size} movies)</div>
+                            <div style="font-size: 0.8rem; color: #6c757d;">
+                                Top genres: ${Object.keys(analysis.top_genres).slice(0, 3).join(', ')}<br>
+                                Avg rating: ${analysis.avg_rating ? analysis.avg_rating.toFixed(1) : 'N/A'}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                clusterInfo.innerHTML = html;
+            } catch (error) {
+                clusterInfo.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function loadDimensions() {
+            const dimensionInfo = document.getElementById('dimensionInfo');
+            dimensionInfo.innerHTML = '<div class="loading">Analyzing dimensions...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/embeddings/analyze/dimensions?top_n=5`);
+                const data = await response.json();
+                
+                let html = '<h4>Top Varying Dimensions</h4>';
+                data.top_varying_dimensions.forEach((dim, index) => {
+                    const topGenres = Object.entries(dim.genre_correlations || {})
+                        .slice(0, 2)
+                        .map(([genre, corr]) => `${genre} (${corr.toFixed(2)})`)
+                        .join(', ');
+                    
+                    html += `
+                        <div class="stat-item" style="margin-bottom: 8px;">
+                            <div class="stat-label">Dimension ${dim.dimension}</div>
+                            <div style="font-size: 0.8rem; color: #6c757d;">
+                                Variance: ${dim.variance.toFixed(4)}<br>
+                                ${topGenres ? `Correlates with: ${topGenres}` : 'No strong genre correlations'}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                dimensionInfo.innerHTML = html;
+            } catch (error) {
+                dimensionInfo.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function loadOutliers() {
+            const outlierInfo = document.getElementById('outlierInfo');
+            outlierInfo.innerHTML = '<div class="loading">Finding outliers...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/embeddings/analyze/outliers?threshold=2.0`);
+                const data = await response.json();
+                
+                let html = `<h4>Embedding Outliers</h4>
+                           <p style="font-size: 0.8rem; color: #6c757d; margin-bottom: 15px;">
+                           ${data.n_outliers} movies found (threshold: ${data.threshold} std deviations)
+                           </p>`;
+                
+                data.outliers.slice(0, 5).forEach(movie => {
+                    html += `
+                        <div class="stat-item" style="margin-bottom: 8px;">
+                            <div class="stat-label">${movie.title}</div>
+                            <div style="font-size: 0.8rem; color: #6c757d;">
+                                Z-score: ${movie.z_score.toFixed(2)}<br>
+                                Genres: ${movie.genres.join(', ') || 'None'}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                outlierInfo.innerHTML = html;
+            } catch (error) {
+                outlierInfo.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-load visualization with default settings on page load
+        window.addEventListener('load', () => {
+            // You can uncomment the line below to auto-load
+            // loadVisualization();
+        });
+    </script>
+</body>
+</html> 

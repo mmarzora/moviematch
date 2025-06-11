@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './RecommendationExplanation.css';
+import { API_BASE_URL } from '../config';
 
 interface ExplanationData {
   movie_id: number;
@@ -75,22 +76,8 @@ const RecommendationExplanation: React.FC<RecommendationExplanationProps> = ({
       try {
         setLoading(true);
         
-        // Dynamic API URL configuration
-        const getAPIBaseURL = () => {
-          if (typeof window !== 'undefined') {
-            const hostname = window.location.hostname;
-            if (hostname === 'localhost' || hostname === '127.0.0.1') {
-              return 'http://localhost:8000';
-            } else {
-              // Use the network IP for cross-device access
-              return 'http://192.168.1.13:8000';
-            }
-          }
-          return 'http://localhost:8000';
-        };
-
         const response = await fetch(
-          `${getAPIBaseURL()}/api/matching/explain/${sessionId}/${movieId}?user1_id=${user1Id}&user2_id=${user2Id}`
+          `${API_BASE_URL}/api/matching/explain/${sessionId}/${movieId}?user1_id=${user1Id}&user2_id=${user2Id}`
         );
 
         if (!response.ok) {

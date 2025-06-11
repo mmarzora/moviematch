@@ -12,3 +12,8 @@ pydantic-settings==2.2.1
 sqlalchemy==2.0.28
 alembic==1.13.1
 psycopg2-binary==2.9.9
+pandas
+scikit-learn
+matplotlib
+seaborn
+psutil

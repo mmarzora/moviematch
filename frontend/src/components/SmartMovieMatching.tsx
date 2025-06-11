@@ -182,7 +182,7 @@ const SmartMovieMatching: React.FC<SmartMovieMatchingProps> = ({ session, member
           setLoading(false);
           setError('Algorithm unavailable - using random movie selection');
         }
-      }, 15000);
+      }, 120000); // Changed from 15000 (15 seconds) to 120000 (2 minutes)
 
       return () => clearTimeout(timeout);
     }

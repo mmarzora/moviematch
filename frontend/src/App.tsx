@@ -7,6 +7,7 @@ import MovieMatching from './components/MovieMatching';
 import SmartMovieMatching from './components/SmartMovieMatching';
 import { Session, sessionService } from './services/sessionService';
 import { v4 as uuidv4 } from 'uuid';
+import { API_BASE_URL } from './config';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -84,6 +85,11 @@ function App() {
       }
     };
   }, [session?.code]); // Only depend on session code, not entire session object
+
+  // Log the backend API URL on app startup
+  useEffect(() => {
+    console.log('[MovieMatch] Using backend API URL:', API_BASE_URL);
+  }, []);
 
   const handleSessionStart = (newSession: Session, smartMatchingEnabled: boolean) => {
     console.log('Session started:', newSession, 'Smart matching:', smartMatchingEnabled);

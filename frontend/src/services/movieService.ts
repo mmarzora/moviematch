@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 // Create an axios instance with the base URL
 const api = axios.create({
-    baseURL: 'http://127.0.0.1:8000'
+    baseURL: `${API_BASE_URL}/api/movies`
 });
 
 export interface Movie {
@@ -21,7 +22,7 @@ export interface Movie {
 }
 
 class MovieService {
-    private readonly API_BASE_URL = '/api/movies';  // Use relative URL since we have a proxy
+    // No longer need API_BASE_URL here, handled by axios instance
 
     async getRandomMovies(params: {
         limit?: number;
@@ -30,7 +31,7 @@ class MovieService {
         minRating?: number;
     } = {}): Promise<Movie[]> {
         try {
-            const response = await api.get(`${this.API_BASE_URL}/random`, { params });
+            const response = await api.get(`/random`, { params });
             
             if (!response.data || !response.data.movies) {
                 console.error('Invalid API response format:', response.data);
@@ -47,7 +48,7 @@ class MovieService {
 
     async getMovieDetails(movieId: number): Promise<Movie | null> {
         try {
-            const response = await api.get(`${this.API_BASE_URL}/${movieId}`);
+            const response = await api.get(`/${movieId}`);
             
             return {
                 ...response.data,
@@ -67,7 +68,7 @@ class MovieService {
 
     async getSimilarMovies(movieId: number, limit: number = 5): Promise<Movie[]> {
         try {
-            const response = await api.get(`${this.API_BASE_URL}/${movieId}/similar`, {
+            const response = await api.get(`/${movieId}/similar`, {
                 params: { limit }
             });
             

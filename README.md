@@ -42,19 +42,20 @@ MovieMatch is an advanced recommendation system that combines cutting-edge machi
 #### Embedding-Based Recommendations
 ```python
 # 384-dimensional vectors using all-MiniLM-L6-v2
-movie_embedding = sentence_transformer.encode([
-    movie.title, 
-    movie.description, 
-    movie.genres
-])
-
-# Dual-user scoring
-dual_score = (
-    user1_similarity * user1_weight + 
-    user2_similarity * user2_weight +
-    compatibility_bonus
+movie_embedding = sentence_transformer.encode(
+    f"{movie.title} {movie.description} {' '.join(movie.genres)}"
 )
+
+# Dual-user scoring (actual implementation)
+user1_sim = cosine_similarity(movie_embedding, user1_embedding)
+user2_sim = cosine_similarity(movie_embedding, user2_embedding)
+combined_score = 0.7 * min(user1_sim, user2_sim) + 0.3 * np.mean([user1_sim, user2_sim])
+# Normalize from [-1, 1] to [0, 1]
+dual_score = (combined_score + 1) / 2
 ```
+
+**Why this formula?**
+- The score prioritizes the lower of the two users' similarities (to ensure both users are satisfied), but adds a smaller average component to avoid being too conservative.
 
 #### Hybrid Scoring System
 - **Content-Based**: Movie embeddings + user preference vectors
@@ -65,143 +66,48 @@ dual_score = (
 - **Confidence Thresholding**: Avoids overconfident predictions
 - **Exploration Decay**: Gradual shift from exploration to exploitation
 
-## 🏛️ Architecture
+## 🚀 Deployment
 
-### Project Structure
-```
-moviematch/
-├── frontend/                       # React TypeScript application
-├── backend/                        # FastAPI Python backend
-├── embedding_visualizer.html       # Standalone embedding visualization
-├── EMBEDDING_INTERPRETATION_GUIDE.md # Embedding analysis documentation
-└── README.md                       # This file
-```
+### Backend (Render + Supabase)
+- The FastAPI backend is deployed on [Render](https://render.com/).
+- The backend connects to a [Supabase](https://supabase.com/) PostgreSQL database for persistent storage and user/session management.
+- All API requests from the frontend are routed to the Render backend URL.
 
-### Frontend (React + TypeScript)
+#### Environment Variables (Render Backend)
+Set these in your Render dashboard:
+- `SUPABASE_URL`: Your Supabase project URL
+- `SUPABASE_KEY`: Your Supabase service role or anon key
+- `DATABASE_URL`: (If using Supabase Postgres directly)
+- Any other secrets required by your backend (e.g., JWT secret, CORS origins)
+
+#### Example Render Build & Start Commands
 ```
-frontend/
-├── src/
-│   ├── components/
-│   │   ├── SmartMovieMatching.tsx           # Main recommendation interface
-│   │   ├── SemanticPreferencesComparison.tsx # Advanced user taste analysis
-│   │   ├── PreferencesComparison.tsx        # User taste profile visualization
-│   │   ├── RecommendationExplanation.tsx    # Algorithm explanation UI
-│   │   ├── SessionManager.tsx               # Session management
-│   │   ├── SessionCreate.tsx                # Session creation
-│   │   ├── SessionJoin.tsx                  # Session joining
-│   │   ├── MovieMatching.tsx                # Movie matching interface
-│   │   ├── UserHistory.tsx                  # User interaction history
-│   │   └── Auth.tsx                         # Authentication component
-│   ├── services/
-│   │   ├── sessionService.ts                # Firebase session management
-│   │   ├── matchingService.ts               # Algorithm communication
-│   │   └── movieService.ts                  # Movie API service
-│   ├── types/                               # TypeScript type definitions
-│   ├── utils/                               # Utility functions
-│   ├── App.tsx                              # Main application component
-│   ├── firebase.ts                          # Firebase configuration
-│   └── config.ts                            # Application configuration
-├── public/                                  # Static assets
-├── package.json                             # Node.js dependencies
-├── firebase.json                            # Firebase configuration
-├── firestore.rules                          # Firestore security rules
-└── firestore.indexes.json                  # Firestore indexes
+# Build command
+pip install -r requirements.txt
+
+# Start command
+uvicorn src.api.main:app --host 0.0.0.0 --port 10000
 ```
 
-### Backend (FastAPI + SQLAlchemy)
-```
-backend/
-├── src/
-│   ├── api/
-│   │   ├── main.py                          # FastAPI application entry point
-│   │   └── routes/
-│   │       ├── matching.py                  # Matching algorithm endpoints
-│   │       ├── movies.py                    # Movie data endpoints
-│   │       └── embedding_analysis.py        # Analytics endpoints
-│   ├── services/
-│   │   ├── matching_service.py              # Core recommendation engine
-│   │   └── movie_service.py                 # Movie data management
-│   ├── models/
-│   │   ├── models.py                        # SQLAlchemy database models
-│   │   └── movie.py                         # Movie data model
-│   ├── schemas/                             # Pydantic schemas
-│   ├── database/
-│   │   ├── db.py                           # Database connection
-│   │   ├── init_db.py                      # Database initialization
-│   │   ├── migration.py                    # Database migrations
-│   │   ├── populate_db.js                  # Database population script
-│   │   └── movies.db                       # SQLite database
-│   ├── tools/
-│   │   ├── embedding_analyzer.py           # Advanced embedding analytics
-│   │   ├── semantic_analyzer.py            # Semantic analysis tools
-│   │   └── recommendation_explainer.py     # Algorithm explanation tools
-│   ├── embeddings/                         # Embedding utilities
-│   └── config.py                           # Backend configuration
-├── requirements.txt                         # Python dependencies
-└── Procfile                                # Deployment configuration
-```
+### Frontend
+- The frontend is configured to use the Render backend URL for all API calls.
+- Update your frontend `.env` or `config.ts` to point to the Render backend endpoint (e.g., `https://your-backend.onrender.com`).
 
-### Database Schema
-```sql
--- Core entities
-Movies (id, title, description, genres, embeddings, ratings, actors, poster_url)
-Users (id, preferences, confidence_score, total_interactions)
-Sessions (id, users, algorithm_state, statistics)
-UserRatings (user_id, movie_id, rating, timestamp)
-```
+## 🏛️ Architecture (updated)
 
-## 🚀 Getting Started
+- **Frontend** (React) → **Backend** (FastAPI on Render) → **Database** (Supabase)
+- All persistent data (users, sessions, ratings, movies) is stored in Supabase.
+- The backend no longer uses SQLite or local DB files.
 
-### Prerequisites
-- **Node.js** 16+ and npm
-- **Python** 3.8+ with pip
-- **Firebase** account (for real-time features)
+## 🔧 Configuration (updated)
 
-### Backend Setup
-
-1. **Navigate to backend directory:**
-   ```bash
-   cd backend
-   ```
-
-2. **Install Python dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Initialize the database:**
-   ```bash
-   python -m src.database.init_db
-   ```
-
-4. **Start the backend server:**
-   ```bash
-   python -m src.api.main
-   ```
-   Server runs at: `http://localhost:8000`
-
-### Frontend Setup
-
-1. **Navigate to frontend directory:**
-   ```bash
-   cd frontend
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Configure Firebase:**
-   - Create a Firebase project
-   - Add your config to `src/firebase.ts`
-   - Enable Firestore and Authentication
-
-4. **Start the development server:**
-   ```bash
-   npm start
-   ```
-   App runs at: `http://localhost:3000`
+- Ensure your backend is configured to use Supabase. Example (in `config.py` or as env vars):
+  ```python
+  SUPABASE_URL = os.getenv('SUPABASE_URL')
+  SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+  # ...
+  ```
+- Remove or ignore any references to `movies.db` or local SQLite files.
 
 ## 🎮 How to Use
 
@@ -294,70 +200,6 @@ POLLING_INTERVAL = 30          # Real-time update frequency (seconds)
 - **Preference Visualization**: See your taste profile evolve
 - **Match History**: Track all your successful movie matches
 
-## 🛠️ Development
-
-### Running Tests
-```bash
-# Backend tests
-cd backend
-python -m pytest
-
-# Frontend tests
-cd frontend
-npm test
-```
-
-### Code Quality
-```bash
-# Python linting
-cd backend
-flake8 src/
-black src/
-
-# TypeScript linting
-cd frontend
-npm run lint
-npm run type-check
-```
-
-### Debugging
-
-Enable debug mode for detailed logging:
-```python
-# In backend/src/config.py
-DEBUG = True
-LOG_LEVEL = "DEBUG"
-```
-
-## 📈 Performance
-
-### Metrics
-- **Response Time**: < 100ms for recommendations
-- **Throughput**: 1000+ concurrent users
-- **Accuracy**: 87% user satisfaction rate
-- **Convergence**: Optimal recommendations by interaction 25
-
-### Optimization Features
-- **Embedding Caching**: Pre-computed movie vectors
-- **Lazy Loading**: Progressive data fetching
-- **Connection Pooling**: Efficient database connections
-- **CDN Integration**: Fast movie poster delivery
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🙏 Acknowledgments
 
 - **Sentence Transformers**: For powerful embedding models
@@ -366,9 +208,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Firebase**: For real-time synchronization
 - **scikit-learn**: For machine learning tools
 
-## 🐛 Troubleshooting
+## 🐛 Troubleshooting (updated)
 
 ### Common Issues
+
+**Backend not connecting to database?**
+- Double-check your Supabase credentials and Render environment variables.
+- Ensure your Supabase database is running and accessible from Render.
 
 **Backend not starting?**
 ```bash
@@ -376,28 +222,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 cd backend
 python -m src.api.main
 ```
-
-**CORS errors in frontend?**
-- Ensure backend allows `null` origin for file:// access
-- Check backend is running on port 8000
-
-**Clustering fails?**
-```bash
-# Set OpenMP environment variable (macOS)
-export OMP_NUM_THREADS=1
-```
-
-**Firebase connection issues?**
-- Verify Firebase configuration in `frontend/src/firebase.ts`
-- Check network connectivity
-- Ensure Firestore rules allow read/write
-
-## 📞 Support
-
-- 📧 **Email**: support@moviematch.com
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/yourusername/moviematch/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/moviematch/discussions)
-- 📖 **Documentation**: [Full Docs](https://moviematch.readthedocs.io)
 
 ---
 

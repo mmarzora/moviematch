@@ -29,13 +29,6 @@ class MovieService:
             from ..config import settings
             cls._model = SentenceTransformer(settings.EMBEDDING_MODEL)
         return cls._model
-
-    def get_movie_embedding(self, title: str, description: str, genres: List[str]) -> bytes:
-        """Generate embedding for a movie based on its metadata."""
-        text = f"{title} {description} {' '.join(genres)}"
-        model = self.get_model()
-        embedding = model.encode([text])[0]
-        return embedding.tobytes()
     
     def bytes_to_array(self, embedding_bytes: bytes) -> np.ndarray:
         """Convert bytes back to numpy array."""

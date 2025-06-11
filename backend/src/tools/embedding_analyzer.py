@@ -7,8 +7,6 @@ used in the MovieMatch recommendation algorithm.
 
 import numpy as np
 import json
-import matplotlib.pyplot as plt
-import seaborn as sns
 from typing import List, Dict, Tuple, Optional
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE

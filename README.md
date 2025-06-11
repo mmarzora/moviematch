@@ -58,8 +58,6 @@ dual_score = (
 
 #### Hybrid Scoring System
 - **Content-Based**: Movie embeddings + user preference vectors
-- **Collaborative**: User similarity patterns
-- **Temporal**: Recency and trending factors
 - **Compatibility**: Mutual preference optimization
 
 #### Anti-Overfitting Strategies
@@ -67,7 +65,7 @@ dual_score = (
 - **Confidence Thresholding**: Avoids overconfident predictions
 - **Exploration Decay**: Gradual shift from exploration to exploitation
 
-## ��️ Architecture
+## 🏛️ Architecture
 
 ### Project Structure
 ```
@@ -280,9 +278,6 @@ POLLING_INTERVAL = 30          # Real-time update frequency (seconds)
 
 ### 🔮 Smart Recommendation Engine
 
-- **Contextual Awareness**: Time of day, season, mood factors
-- **Social Learning**: Learn from similar user pairs
-- **Trending Integration**: Popular movies get slight boost
 - **Genre Balancing**: Prevents over-recommendation of single genres
 
 ### 🚀 Real-Time Features

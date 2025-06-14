@@ -10,6 +10,8 @@ from typing import List, Dict, Tuple, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from collections import defaultdict
+import random
+import hashlib
 
 from ..models.models import Movie, UserPreference, MatchingSession, UserFeedback
 from .movie_service import movie_service
@@ -23,9 +25,8 @@ class MatchingService:
     """Service for the MovieMatch recommendation algorithm."""
     
     # Algorithm parameters
-    INITIAL_LEARNING_RATE = 0.3
-    FINAL_LEARNING_RATE = 0.1
-    EXPLORATION_BUDGET = 0.25
+    INITIAL_LEARNING_RATE = 0.15
+    FINAL_LEARNING_RATE = 0.05
     DIVERSITY_THRESHOLD = 0.8
     
     # Stage thresholds
@@ -173,7 +174,8 @@ class MatchingService:
             'learning_rate': max(
                 self.FINAL_LEARNING_RATE,
                 self.INITIAL_LEARNING_RATE * (0.9 ** (interactions / 10))
-            )
+            ),
+            'session_id': session.id
         }
     
     def _generate_candidates(
@@ -198,11 +200,13 @@ class MatchingService:
         )
         # Apply basic quality filters
         query = query.filter(
-            Movie.rating >= 6.0,
-            Movie.release_year >= 1990
+            Movie.rating >= 6.0
         )
         # Get candidates (limit to reasonable number for scoring)
         candidates = query.limit(1000).all()
+        # Deterministically shuffle candidates using session ID as seed
+        rng = random.Random(session.id)
+        rng.shuffle(candidates)
         return candidates
     
     def _score_movies(
@@ -351,6 +355,9 @@ class MatchingService:
         # Add exploration movies (random selection from remaining)
         remaining_movies = [movie for _, movie in scored_movies[exploitation_count:]]
         if remaining_movies and exploration_count > 0:
+            # Set numpy random seed based on session ID for deterministic selection
+            session_seed = int(hashlib.sha256(str(stage_params.get('session_id', 'default')).encode()).hexdigest(), 16) % (2**32)
+            np.random.seed(session_seed)
             exploration_movies = np.random.choice(
                 remaining_movies, 
                 size=min(exploration_count, len(remaining_movies)), 
@@ -385,7 +392,10 @@ class MatchingService:
         current_embedding = movie_service.bytes_to_array(prefs.embedding_vector) if prefs.embedding_vector else None
         
         # Calculate learning rate
-        learning_rate = max(0.05, 0.3 * (0.9 ** (prefs.total_interactions / 10)))
+        learning_rate = max(
+            self.FINAL_LEARNING_RATE,
+            self.INITIAL_LEARNING_RATE * (0.9 ** (prefs.total_interactions / 10))
+        )
         
         # Update genre preferences
         movie_genres = parse_json_field(movie.genres) if movie.genres else []

@@ -192,18 +192,21 @@ const SmartMovieMatching: React.FC<SmartMovieMatchingProps> = ({ session, member
   const loadRecommendations = useCallback(async () => {
     if (!matchingSessionId) return;
 
+    console.log('[Debug] loadRecommendations called');
     try {
       setLoading(true);
-      const recommendations = await matchingService.getRecommendations(matchingSessionId, 10, memberId);
+      const recommendations = await matchingService.getRecommendations(matchingSessionId, 5, memberId);
+      
+      // Log the titles of the movies in the batch
+      if (recommendations.movies && recommendations.movies.length > 0) {
+        const titles = recommendations.movies.map(m => m.title);
+        console.log('[BatchRecommendation] Titles:', titles);
+      }
       
       if (mountedRef.current) {
         setAlgorithmState(recommendations);
         setMovieQueue(recommendations.movies);
-        // Only set currentMovie if it is null and there are movies
-        if (currentMovie === null && recommendations.movies.length > 0) {
-          console.log('[setCurrentMovie] Setting to first movie from recommendations:', recommendations.movies[0]);
-          setCurrentMovie(recommendations.movies[0]);
-        }
+        setCurrentMovie(recommendations.movies[0] || null);
       }
     } catch (error: any) {
       console.error('Failed to load recommendations:', error);
@@ -213,7 +216,7 @@ const SmartMovieMatching: React.FC<SmartMovieMatchingProps> = ({ session, member
         setLoading(false);
       }
     }
-  }, [matchingSessionId, currentMovie, memberId]);
+  }, [matchingSessionId, memberId]);
 
   // Load recommendations when session is ready
   useEffect(() => {
@@ -274,21 +277,18 @@ const SmartMovieMatching: React.FC<SmartMovieMatchingProps> = ({ session, member
           console.error('[Algorithm] Failed to submit feedback:', algorithmError);
           // Don't throw here - let Firebase save continue even if algorithm fails
         }
-
-        // Load fresh recommendations after feedback
-        setTimeout(() => {
-          loadRecommendations();
-        }, 1000);
       }
 
       // Move to next movie
       const currentIndex = movieQueue.findIndex(m => m.id === movieId);
       const nextIndex = currentIndex + 1;
+      console.log('[Debug] handleSwipe:', { movieId, currentIndex, nextIndex, queueLength: movieQueue.length });
       
       if (nextIndex < movieQueue.length) {
         setCurrentMovie(movieQueue[nextIndex]);
       } else {
         setCurrentMovie(null);
+        console.log('[Debug] Queue exhausted, calling loadRecommendations');
         await loadRecommendations();
       }
 

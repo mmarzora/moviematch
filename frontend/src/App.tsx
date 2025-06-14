@@ -8,6 +8,7 @@ import SmartMovieMatching from './components/SmartMovieMatching';
 import { Session, sessionService } from './services/sessionService';
 import { v4 as uuidv4 } from 'uuid';
 import { API_BASE_URL } from './config';
+import GettingStartedInfo from './components/GettingStartedInfo';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -135,7 +136,10 @@ function App() {
             </button>
           </div>
         ) : !session ? (
-          <SessionManager onSessionStart={handleSessionStart} memberId={memberId} />
+          <>
+            <GettingStartedInfo />
+            <SessionManager onSessionStart={handleSessionStart} memberId={memberId} />
+          </>
         ) : (
           <div className="session-active">
             <div className="session-info">

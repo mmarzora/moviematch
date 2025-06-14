@@ -221,17 +221,24 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionStart, memberI
 
   if (!sessionCode) {
     return (
-      <>
-        <SessionCreate 
-          onSessionCreated={handleSessionCreated} 
-          userId={memberIdRef.current}
-        />
-        <div className="divider">or</div>
-        <SessionJoin 
-          onSessionJoined={handleSessionJoined}
-          memberId={memberIdRef.current}
-        />
-      </>
+      <div className="session-panel">
+        <h2 className="session-panel-title">Ready to Begin?</h2>
+        <div className="session-actions">
+          <div className="session-action-card">
+            <SessionCreate 
+              onSessionCreated={handleSessionCreated} 
+              userId={memberIdRef.current}
+            />
+          </div>
+          <div className="session-divider">or</div>
+          <div className="session-action-card">
+            <SessionJoin 
+              onSessionJoined={handleSessionJoined}
+              memberId={memberIdRef.current}
+            />
+          </div>
+        </div>
+      </div>
     );
   }
 

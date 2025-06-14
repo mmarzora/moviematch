@@ -48,7 +48,6 @@ const SessionJoin: React.FC<SessionJoinProps> = ({ onSessionJoined, memberId }) 
 
   return (
     <div className="session-join">
-      <h2>Join Session</h2>
       <form onSubmit={handleJoinSession}>
         <input
           type="text"
@@ -70,7 +69,7 @@ const SessionJoin: React.FC<SessionJoinProps> = ({ onSessionJoined, memberId }) 
         <button 
           type="submit"
           disabled={isLoading}
-          className="join-button"
+          className="main-action-button"
         >
           {isLoading ? 'Joining...' : 'Join Session'}
         </button>

@@ -46,11 +46,10 @@ const SessionCreate: React.FC<SessionCreateProps> = ({ onSessionCreated, userId 
 
   return (
     <div className="session-create">
-      <h2>Create New Session</h2>
       <button 
         onClick={handleClick}
         disabled={isLoading}
-        className="create-button"
+        className="main-action-button"
       >
         {isLoading ? 'Creating...' : 'Create New Session'}
       </button>
